@@ -28,7 +28,7 @@ export function translateAuthError(message: string): string {
   if (/failed to fetch|load failed|networkerror/i.test(message)) {
     return isSupabaseConfigured
       ? 'Não foi possível conectar ao servidor. Verifique a internet e tente de novo.'
-      : 'O app foi publicado sem a configuração do servidor (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY). Configure as variáveis e publique de novo.';
+      : 'O app foi publicado sem a configuração do servidor (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY, ou a integração Supabase da Vercel). Configure as variáveis e publique de novo.';
   }
   if (message.startsWith('Password should be at least')) return 'A senha precisa ter pelo menos 6 caracteres.';
   return AUTH_ERRORS[message] ?? message;

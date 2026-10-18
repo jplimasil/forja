@@ -6,6 +6,8 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
+  // NEXT_PUBLIC_*: nomes criados pela integração Supabase da Vercel (só valores públicos).
+  envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
   plugins: [
     react(),
     tailwindcss(),

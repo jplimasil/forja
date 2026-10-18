@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase, unwrap } from './supabase';
+import { VAPID_PUBLIC_KEY } from './env';
 
 export type PushStatus = 'subscribed' | 'can-subscribe' | 'needs-install-ios' | 'denied' | 'unsupported';
 
@@ -30,8 +31,7 @@ function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
 }
 
 export async function subscribePush(): Promise<void> {
-  const key = import.meta.env.VITE_VAPID_PUBLIC_KEY;
-  if (!key) throw new Error('Notificações ainda não configuradas no servidor.');
+  const key = VAPID_PUBLIC_KEY;
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') throw new Error('Permissão de notificações não concedida.');
   const reg = await navigator.serviceWorker.ready;

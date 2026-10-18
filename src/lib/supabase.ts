@@ -1,10 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-/** Falso quando o app foi gerado sem as variáveis VITE_SUPABASE_* (o Vite as embute no build). */
-export const isSupabaseConfigured = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+import { supabaseEnv } from './env';
 
-const url = import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54321';
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'missing-anon-key';
+/** Falso quando o app foi gerado sem as variáveis do Supabase (o Vite as embute no build). */
+export const isSupabaseConfigured = Boolean(supabaseEnv.url && supabaseEnv.anonKey);
+
+const url = supabaseEnv.url || 'http://localhost:54321';
+const anonKey = supabaseEnv.anonKey || 'missing-anon-key';
 
 export const supabase = createClient(url, anonKey, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
