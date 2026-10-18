@@ -5,8 +5,8 @@ export interface Msg { title: string; body: string }
 
 interface Ctx { need: number; available: number; stakes: string; motivation: string }
 
-const treinos = (n: number) => (n === 1 ? '1 treino' : `${n} treinos`);
-const dias = (n: number) => (n === 1 ? '1 dia' : `${n} dias`);
+export const treinos = (n: number) => (n === 1 ? '1 treino' : `${n} treinos`);
+export const dias = (n: number) => (n === 1 ? '1 dia' : `${n} dias`);
 export const semanas = (n: number) => (n === 1 ? '1 semana' : `${n} semanas`);
 
 const TEMPLATES: Record<Exclude<RiskLevel, 'met'>, ((c: Ctx) => Msg)[]> = {

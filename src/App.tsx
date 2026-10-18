@@ -4,6 +4,7 @@ import { useSettings } from './data/settings';
 import { AppShell } from './ui/AppShell';
 import { AuthScreen } from './features/auth/AuthScreen';
 import { Onboarding } from './features/onboarding/Onboarding';
+import { Home } from './features/home/Home';
 import { PageTitle } from './ui/Card';
 
 function Placeholder({ title }: { title: string }) {
@@ -39,7 +40,7 @@ export function App() {
         <Route element={<SettingsGate />}>
           <Route path="/boas-vindas" element={<Onboarding />} />
           <Route element={<AppShell />}>
-            <Route index element={<Placeholder title="Início" />} />
+            <Route index element={<Home />} />
             <Route path="sos" element={<Placeholder title="Tô sem vontade" />} />
             <Route path="treino" element={<Placeholder title="Treino" />} />
             <Route path="corpo" element={<Placeholder title="Corpo" />} />
