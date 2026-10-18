@@ -1,0 +1,67 @@
+@import '@fontsource/anton/400.css';
+@import '@fontsource/barlow-condensed/500.css';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
+@import '@fontsource-variable/inter';
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #0a0a0b;
+  --color-card: #16161a;
+  --color-raised: #1f1f25;
+  --color-line: #2a2a31;
+  --color-fg: #f5f5f5;
+  --color-muted: #8a8a93;
+  --color-accent: #c6ff3d;
+  --color-warn: #ff6b2c;
+  --color-danger: #ff3b3b;
+  --color-ice: #8fa8c8;
+
+  --font-display: 'Anton', 'Impact', sans-serif;
+  --font-head: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --font-body: 'Inter Variable', system-ui, sans-serif;
+
+  --animate-pulse-fire: pulse-fire 1.6s ease-in-out infinite;
+  --animate-burst: burst 700ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+
+  @keyframes pulse-fire {
+    0%, 100% { box-shadow: 0 0 0 0 rgb(255 107 44 / 0.55); }
+    50% { box-shadow: 0 0 0 8px rgb(255 107 44 / 0); }
+  }
+  @keyframes burst {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+  }
+}
+
+html {
+  color-scheme: dark;
+  background: var(--color-bg);
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* Números de placar: algarismos de largura fixa para não "pular" quando mudam. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
