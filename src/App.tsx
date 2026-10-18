@@ -1,7 +1,9 @@
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
 import { useSession } from './lib/auth';
+import { useSettings } from './data/settings';
 import { AppShell } from './ui/AppShell';
 import { AuthScreen } from './features/auth/AuthScreen';
+import { Onboarding } from './features/onboarding/Onboarding';
 import { PageTitle } from './ui/Card';
 
 function Placeholder({ title }: { title: string }) {
@@ -16,6 +18,17 @@ function Splash() {
   );
 }
 
+/** Sem configuração → primeiro acesso; já configurado → nunca volta ao primeiro acesso. */
+function SettingsGate() {
+  const { data, isPending } = useSettings();
+  const { pathname } = useLocation();
+  if (isPending) return <Splash />;
+  const onboarding = pathname === '/boas-vindas';
+  if (!data && !onboarding) return <Navigate to="/boas-vindas" replace />;
+  if (data && onboarding) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
+
 export function App() {
   const { session, loading } = useSession();
   if (loading) return <Splash />;
@@ -23,14 +36,17 @@ export function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/boas-vindas" element={<Placeholder title="Boas-vindas" />} />
-        <Route element={<AppShell />}>
-          <Route index element={<Placeholder title="Início" />} />
-          <Route path="sos" element={<Placeholder title="Tô sem vontade" />} />
-          <Route path="treino" element={<Placeholder title="Treino" />} />
-          <Route path="corpo" element={<Placeholder title="Corpo" />} />
-          <Route path="historico" element={<Placeholder title="Histórico" />} />
-          <Route path="ajustes" element={<Placeholder title="Ajustes" />} />
+        <Route element={<SettingsGate />}>
+          <Route path="/boas-vindas" element={<Onboarding />} />
+          <Route element={<AppShell />}>
+            <Route index element={<Placeholder title="Início" />} />
+            <Route path="sos" element={<Placeholder title="Tô sem vontade" />} />
+            <Route path="treino" element={<Placeholder title="Treino" />} />
+            <Route path="corpo" element={<Placeholder title="Corpo" />} />
+            <Route path="historico" element={<Placeholder title="Histórico" />} />
+            <Route path="ajustes" element={<Placeholder title="Ajustes" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
