@@ -97,7 +97,7 @@ export function useAddRoutineExercise() {
       }
     } else {
       const created = unwrap(await supabase.from('exercises').insert({ name, muscle_group: e.muscleGroup, kind: e.kind }).select('id').single());
-      exerciseId = created.id;
+      exerciseId = created!.id;
     }
     unwrap(await supabase.from('routine_exercises').insert({
       routine_id: e.routineId, exercise_id: exerciseId, target_sets: e.targetSets, position: e.position,
