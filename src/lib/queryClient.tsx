@@ -1,4 +1,4 @@
-import { QueryClient, type MutationFunction } from '@tanstack/react-query';
+import { QueryClient, type Mutation, type MutationFunction } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import type { ReactNode } from 'react';
@@ -19,9 +19,19 @@ const persister = createSyncStoragePersister({
   key: CACHE_KEY,
 });
 
+const QUEUED = new Set<string>();
+
+/** Falha de rede (sem sinal, sinal fraco, timeout) — diferente de uma recusa do servidor. */
+export function isNetworkError(err: unknown): boolean {
+  return err instanceof TypeError || /fetch|network|load failed|timeout|abort/i.test(String((err as Error)?.message ?? err));
+}
+
 /**
- * Mutações retomáveis precisam de uma função registrada por chave: depois de recarregar a página,
- * a fila persistida só guarda chave + variáveis, e é por aqui que o React Query reencontra a função.
+ * Mutações da fila offline (check-in, séries). Três garantias:
+ * - função registrada por chave: depois de recarregar, a fila persistida só guarda chave + variáveis,
+ *   e é por aqui que o React Query reencontra a função;
+ * - mesmo `scope`: ao reconectar elas rodam em ordem, então o check-in chega antes das séries do dia;
+ * - erro de rede tenta de novo com espera crescente, em vez de descartar o registro.
  */
 export function registerMutationDefaults<TVars, TContext = unknown>(
   key: string[],
@@ -32,7 +42,19 @@ export function registerMutationDefaults<TVars, TContext = unknown>(
     onSettled?: () => void;
   },
 ): void {
-  queryClient.setMutationDefaults(key, options as Parameters<typeof queryClient.setMutationDefaults>[1]);
+  QUEUED.add(JSON.stringify(key));
+  queryClient.setMutationDefaults(key, {
+    ...options,
+    scope: { id: 'fila-offline' },
+    retry: (failures: number, err: Error) => failures < 6 && isNetworkError(err),
+    retryDelay: (attempt: number) => Math.min(1000 * 2 ** attempt, 30_000),
+  } as Parameters<typeof queryClient.setMutationDefaults>[1]);
+}
+
+/** Só guarda no aparelho o que consegue ser retomado depois de recarregar (tem função registrada). */
+export function shouldPersistMutation(m: Mutation<unknown, unknown, unknown, unknown>): boolean {
+  const key = m.options.mutationKey;
+  return m.state.isPaused && !!key && QUEUED.has(JSON.stringify(key));
 }
 
 export function clearPersistedCache(): void {
@@ -48,7 +70,7 @@ export function AppQueryProvider({ children }: { children: ReactNode }) {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister, maxAge: WEEK_MS }}
+      persistOptions={{ persister, maxAge: WEEK_MS, dehydrateOptions: { shouldDehydrateMutation: shouldPersistMutation } }}
       onSuccess={() => void queryClient.resumePausedMutations()}
     >
       {children}
