@@ -59,3 +59,10 @@ it('streak zero não aparece como "0 semanas"', async () => {
   await user.click(screen.getByRole('button', { name: 'Próximo' }));
   expect(screen.getByTestId('stakes').textContent).not.toContain('0 semanas');
 });
+
+it('singular quando falta um treino', async () => {
+  const s = make(2, []);
+  const user = setup({ ...s, progress: { ...s.progress, need: 1 } });
+  await user.click(screen.getByRole('button', { name: 'Próximo' }));
+  expect(screen.getByText('Falta 1 treino para fechar a semana.')).toBeInTheDocument();
+});

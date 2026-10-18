@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import type { ISODate } from '@rules/types.ts';
 import { addDays } from '@rules/dates.ts';
 import { canCheckin } from '@rules/checkin.ts';
-import { dias, treinos } from '@rules/messages.ts';
+import { dias, faltam } from '@rules/messages.ts';
 import { formatMoney } from '@rules/money.ts';
 import type { WeekProgress } from '@rules/week.ts';
 import { useWeekState } from '../../data/useWeekState';
@@ -27,8 +27,8 @@ function statusLine(p: WeekProgress, frozen: boolean): string {
   if (frozen) return 'Semana congelada. Sem cobrança até domingo.';
   if (p.level === 'met') return 'Meta da semana cumprida. Treino extra é bônus.';
   const restam = p.available === 1 ? 'resta 1 dia' : `restam ${dias(p.available)}`;
-  if (p.level === 'red') return `Faltam ${treinos(p.need)} e ${restam}. A meta desta semana não fecha mais, mas o hábito continua.`;
-  return `Faltam ${treinos(p.need)} e ${restam}.`;
+  if (p.level === 'red') return `${faltam(p.need)} e ${restam}. A meta desta semana não fecha mais, mas o hábito continua.`;
+  return `${faltam(p.need)} e ${restam}.`;
 }
 
 function longDate(d: ISODate): string {

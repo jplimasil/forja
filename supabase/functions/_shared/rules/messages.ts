@@ -7,19 +7,21 @@ interface Ctx { need: number; available: number; stakes: string; motivation: str
 
 export const treinos = (n: number) => (n === 1 ? '1 treino' : `${n} treinos`);
 export const dias = (n: number) => (n === 1 ? '1 dia' : `${n} dias`);
-export const semanas = (n: number) => (n === 1 ? '1 semana' : `${n} semanas`);
+/** "Falta 1 treino" / "Faltam 3 treinos". */
+export const faltam = (n: number) => (n === 1 ? 'Falta 1 treino' : `Faltam ${n} treinos`);
+export const semanas =(n: number) => (n === 1 ? '1 semana' : `${n} semanas`);
 
 const TEMPLATES: Record<Exclude<RiskLevel, 'met'>, ((c: Ctx) => Msg)[]> = {
   green: [
-    (c) => ({ title: 'Hora do treino', body: `Faltam ${treinos(c.need)} na semana. Bora fazer um hoje?` }),
+    (c) => ({ title: 'Hora do treino', body: `${faltam(c.need)} na semana. Bora fazer um hoje?` }),
     (c) => ({ title: 'Seu horário chegou', body: c.motivation ? `Lembra: ${c.motivation}. Vai lá.` : 'Treino de hoje garante a semana tranquila.' }),
     (c) => ({ title: 'Mantém o ritmo', body: `Treinar hoje deixa a semana leve: ${treinos(c.need)} para a meta.` }),
     () => ({ title: 'Partiu academia', body: 'O mais difícil é sair de casa. O resto é só repetição.' }),
   ],
   yellow: [
-    (c) => ({ title: 'A semana está apertando', body: `Faltam ${treinos(c.need)} e restam ${dias(c.available)}. Hoje conta.` }),
+    (c) => ({ title: 'A semana está apertando', body: `${faltam(c.need)} e restam ${dias(c.available)}. Hoje conta.` }),
     (c) => ({ title: 'Sem folga sobrando', body: `Se pular hoje, vai precisar treinar quase todo dia até domingo. Em jogo: ${c.stakes}.` }),
-    (c) => ({ title: 'Não deixa acumular', body: c.motivation ? `${c.motivation}: isso não acontece pulando treino. Faltam ${treinos(c.need)}.` : `Faltam ${treinos(c.need)} em ${dias(c.available)}. Vai hoje.` }),
+    (c) => ({ title: 'Não deixa acumular', body: c.motivation ? `${c.motivation}: isso não acontece pulando treino. ${faltam(c.need)}.` : `${faltam(c.need)} em ${dias(c.available)}. Vai hoje.` }),
     (c) => ({ title: 'Hoje é dia', body: `Você tem ${dias(c.available)} para ${treinos(c.need)}. Não queime a margem.` }),
   ],
   fire: [

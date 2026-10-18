@@ -95,3 +95,8 @@ it('atalho para o Tô sem vontade', () => {
   renderHome(base());
   expect(screen.getByRole('link', { name: 'Tô sem vontade' })).toHaveAttribute('href', '/sos');
 });
+
+it('singular quando falta um treino e resta um dia', () => {
+  renderHome(base({ progress: { done: 3, goal: 4, need: 1, available: 1, level: 'fire' } }));
+  expect(screen.getByText('Falta 1 treino e resta 1 dia.')).toBeInTheDocument();
+});

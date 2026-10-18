@@ -19,3 +19,12 @@ it('sem motivos não quebra', () => {
 it('resumo semanal failed cita multa', () => {
   expect(weeklySummaryMessage({ status: 'failed', streak: 0, penaltyAmount: 10, penaltyDescription: 'no cofrinho' }).body).toContain('R$10');
 });
+
+it('concordância no singular: "Falta 1 treino", nunca "Faltam 1 treino"', () => {
+  for (const level of ['green', 'yellow', 'fire'] as const) {
+    for (let seed = 0; seed < 8; seed++) {
+      const { body } = reminderMessage({ ...m, need: 1, available: 3, level, streak: 2, penaltyAmount: 10, seed });
+      expect(body).not.toContain('Faltam 1 ');
+    }
+  }
+});

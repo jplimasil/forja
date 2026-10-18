@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { penaltyText, stakesText, treinos } from '@rules/messages.ts';
+import { faltam, penaltyText, stakesText } from '@rules/messages.ts';
 import { useWeekState } from '../../data/useWeekState';
 import { useCheckin } from '../../data/checkins';
 import { Button } from '../../ui/Button';
@@ -38,7 +38,7 @@ export function Sos() {
               : `Nesta semana estão em jogo ${stakes}.`}
           </p>
           {!s.warmup && s.progress.need > 0 && (
-            <p className="text-muted">Faltam {treinos(s.progress.need)} para fechar a semana.</p>
+            <p className="text-muted">{faltam(s.progress.need)} para fechar a semana.</p>
           )}
         </div>
       ),
