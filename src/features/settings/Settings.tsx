@@ -22,7 +22,7 @@ const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="space-y-4 border-t border-line pt-8 first:border-t-0 first:pt-0">
+    <section className="space-y-4 border-t border-line pt-8 first-of-type:border-t-0 first-of-type:pt-0">
       <h2 className="font-head text-2xl font-bold">{title}</h2>
       {children}
     </section>

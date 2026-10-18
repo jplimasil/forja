@@ -66,8 +66,8 @@ export function Workout() {
         </section>
       ) : (
         <section className="space-y-6" aria-label="Treino de hoje">
-          <form onSubmit={submit} className="grid gap-3 sm:grid-cols-[1fr_6rem_7rem_auto] sm:items-end">
-            <label className="block space-y-1.5">
+          <form onSubmit={submit} className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_6rem_7rem_auto] sm:items-end">
+            <label className="col-span-2 block space-y-1.5 sm:col-span-1">
               <span className="text-sm text-muted">Exercício</span>
               <input className={inputClass} list="exercicios" required value={exercise} onChange={(e) => setExercise(e.target.value)} placeholder="Ex.: Supino reto" />
               <datalist id="exercicios">{exercises.map((n) => <option key={n} value={n} />)}</datalist>
@@ -80,7 +80,7 @@ export function Workout() {
               <span className="text-sm text-muted">Carga (kg)</span>
               <input className={`${inputClass} tabular`} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="0" />
             </label>
-            <Button type="submit" className="h-[3.25rem]">Adicionar série</Button>
+            <Button type="submit" className="col-span-2 h-[3.25rem] sm:col-span-1">Adicionar série</Button>
           </form>
 
           {todaySets.length === 0 && previous.length > 0 && (
