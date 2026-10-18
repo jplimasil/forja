@@ -1,0 +1,63 @@
+import { useCallback, useEffect, useState } from 'react';
+import { supabase, unwrap } from './supabase';
+
+export type PushStatus = 'subscribed' | 'can-subscribe' | 'needs-install-ios' | 'denied' | 'unsupported';
+
+export function isIos(): boolean {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+export function isStandalone(): boolean {
+  return window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
+export async function pushStatus(): Promise<PushStatus> {
+  // No iPhone, push só existe para apps adicionados à Tela de Início.
+  if (isIos() && !isStandalone()) return 'needs-install-ios';
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') return 'unsupported';
+  if (Notification.permission === 'denied') return 'denied';
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  return sub ? 'subscribed' : 'can-subscribe';
+}
+
+function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
+  const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(padded);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+export async function subscribePush(): Promise<void> {
+  const key = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+  if (!key) throw new Error('Notificações ainda não configuradas no servidor.');
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Permissão de notificações não concedida.');
+  const reg = await navigator.serviceWorker.ready;
+  const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) }));
+  const json = sub.toJSON();
+  unwrap(
+    await supabase.from('push_subscriptions').upsert(
+      { endpoint: sub.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth, user_agent: navigator.userAgent },
+      { onConflict: 'endpoint' },
+    ),
+  );
+}
+
+export async function unsubscribePush(): Promise<void> {
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return;
+  unwrap(await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint));
+  await sub.unsubscribe();
+}
+
+export function usePushStatus(): { status: PushStatus | null; refresh: () => void } {
+  const [status, setStatus] = useState<PushStatus | null>(null);
+  const refresh = useCallback(() => {
+    pushStatus().then(setStatus, () => setStatus('unsupported'));
+  }, []);
+  useEffect(refresh, [refresh]);
+  return { status, refresh };
+}

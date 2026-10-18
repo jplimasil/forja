@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0A0A0B"/>
+  <!-- "F" de FORJA em blocos inclinados, como letreiro esportivo -->
+  <g transform="translate(256 256) skewX(-10) translate(-256 -256)" fill="#C6FF3D">
+    <rect x="150" y="100" width="76" height="312"/>
+    <rect x="150" y="100" width="222" height="72"/>
+    <rect x="150" y="226" width="172" height="66"/>
+  </g>
+</svg>

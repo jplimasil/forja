@@ -14,6 +14,8 @@ import { RiskBadge } from '../../ui/RiskBadge';
 import { StreakFlame } from '../../ui/StreakFlame';
 import { CheckinBurst } from '../../ui/CheckinBurst';
 import { Button } from '../../ui/Button';
+import { usePushStatus } from '../../lib/push';
+import { PUSH_HELP } from '../settings/PushSection';
 
 const FREEZE_REASONS = {
   met: 'A meta desta semana já foi batida.',
@@ -58,6 +60,23 @@ function WeekStrip({ weekStart, today, trained }: { weekStart: ISODate; today: I
         );
       })}
     </ol>
+  );
+}
+
+/** Sem notificações o app não consegue cobrar: avisa até estarem ativas. */
+function PushBanner() {
+  const { status } = usePushStatus();
+  if (!status || status === 'subscribed') return null;
+  return (
+    <div className="rounded-2xl border border-warn/40 bg-warn/10 p-5">
+      <p className="font-head text-lg font-semibold text-warn">Lembretes desligados</p>
+      <p className="mt-1 text-sm text-fg/90">
+        {status === 'can-subscribe' ? 'Sem notificações, o FORJA não consegue te lembrar do treino.' : PUSH_HELP[status]}
+      </p>
+      {status === 'can-subscribe' && (
+        <Link to="/ajustes" className="mt-3 inline-block text-sm font-semibold text-fg underline underline-offset-4">Ativar em Ajustes</Link>
+      )}
+    </div>
   );
 }
 
@@ -128,6 +147,7 @@ export function Home() {
       </section>
 
       <aside className="space-y-8 lg:pt-14">
+        <PushBanner />
         {warmup ? (
           <p className="rounded-2xl border border-line p-5 text-fg/90">
             Semana de aquecimento: a cobrança começa na segunda.

@@ -1,8 +1,8 @@
-@import '@fontsource/anton/400.css';
-@import '@fontsource/barlow-condensed/500.css';
-@import '@fontsource/barlow-condensed/600.css';
-@import '@fontsource/barlow-condensed/700.css';
-@import '@fontsource-variable/inter';
+/* Só o subconjunto latino (cobre o português) para o cache offline ficar leve. */
+@import '@fontsource/anton/latin-400.css';
+@import '@fontsource/barlow-condensed/latin-500.css';
+@import '@fontsource/barlow-condensed/latin-600.css';
+@import '@fontsource/barlow-condensed/latin-700.css';
 @import 'tailwindcss';
 
 @theme {
@@ -32,6 +32,14 @@
     0% { transform: translate(0, 0) scale(1); opacity: 1; }
     100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
   }
+}
+
+@font-face {
+  font-family: 'Inter Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2') format('woff2-variations');
 }
 
 html {
