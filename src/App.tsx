@@ -9,11 +9,7 @@ import { Sos } from './features/sos/Sos';
 import { Workout } from './features/workout/Workout';
 import { Body } from './features/body/Body';
 import { History } from './features/history/History';
-import { PageTitle } from './ui/Card';
-
-function Placeholder({ title }: { title: string }) {
-  return <PageTitle>{title}</PageTitle>;
-}
+import { Settings } from './features/settings/Settings';
 
 function Splash() {
   return (
@@ -49,7 +45,7 @@ export function App() {
             <Route path="treino" element={<Workout />} />
             <Route path="corpo" element={<Body />} />
             <Route path="historico" element={<History />} />
-            <Route path="ajustes" element={<Placeholder title="Ajustes" />} />
+            <Route path="ajustes" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>
