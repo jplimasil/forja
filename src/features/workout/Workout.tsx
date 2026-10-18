@@ -154,7 +154,7 @@ export function Workout() {
   const registered = state.checkedInToday && (!!detail?.routineId || (detail?.muscles.length ?? 0) > 0 || hasToday);
 
   return (
-    <div className="space-y-6 font-k-body text-k-text">
+    <div className="mx-auto max-w-3xl space-y-6 font-k-body text-k-text">
       <header className="flex items-start justify-between gap-3">
         <div>
           <KLabel>{registered ? 'Status // treino do dia' : 'Status // sem treino hoje'}</KLabel>

@@ -33,7 +33,7 @@ export function OneRmChart({ data }: { data: { weekStart: ISODate; value: number
       </figcaption>
       <div className="h-36" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+          <LineChart data={data} margin={{ top: 8, right: 20, bottom: 0, left: -16 }}>
             <CartesianGrid vertical={false} stroke="var(--color-k-line)" strokeDasharray="2 2" />
             <XAxis dataKey="weekStart" tickFormatter={ddmm} stroke="var(--color-k-muted)" tick={{ fontSize: 10, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} />
             <YAxis stroke="var(--color-k-muted)" tick={{ fontSize: 10, fontFamily: 'JetBrains Mono' }} tickLine={false} axisLine={false} width={44} domain={['auto', 'auto']} tickFormatter={kg} />

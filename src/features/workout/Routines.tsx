@@ -52,7 +52,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
           <>
             <div className="min-w-0">
               <KLabel>{list.length} {list.length === 1 ? 'exercício' : 'exercícios'}</KLabel>
-              <h2 className="truncate font-k-display text-[28px] leading-8 tracking-[0.03em] text-k-text">{routine.name}</h2>
+              <h2 className="line-clamp-2 font-k-display text-[28px] leading-8 tracking-[0.03em] text-k-text">{routine.name}</h2>
             </div>
             <div className="flex shrink-0 gap-1.5">
               <button type="button" aria-label={`Renomear ${routine.name}`} onClick={() => setRenaming(true)} className={iconBtn}><Icon name="edit" size={16} /></button>
@@ -68,18 +68,18 @@ function RoutineCard({ routine }: { routine: Routine }) {
 
       <ol className="divide-y divide-k-line">
         {list.map((e, i) => (
-          <li key={e.id} className="flex items-center gap-3 px-4 py-3">
+          <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
             <span className="w-6 font-k-mono text-[11px] font-semibold text-k-muted">{String(i + 1).padStart(2, '0')}</span>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 basis-[calc(100%-2.25rem)] sm:basis-auto">
               <p className="truncate font-k-body text-sm font-semibold text-k-text">{e.name}</p>
               <KLabel>{muscleLabel(e.muscleGroup)}{e.kind ? `, ${KIND_LABELS[e.kind]}` : ''}</KLabel>
             </div>
-            <div className="flex items-center gap-1" aria-label={`Séries-alvo de ${e.name}`}>
+            <div className="ml-9 flex items-center gap-1 sm:ml-0" aria-label={`Séries-alvo de ${e.name}`}>
               <button type="button" aria-label={`Menos séries em ${e.name}`} disabled={e.targetSets <= 1} onClick={() => updateExercise.mutate({ id: e.id, targetSets: e.targetSets - 1 })} className={`${iconBtn} size-8`}>−</button>
               <span className="w-12 text-center font-k-mono text-sm font-semibold text-k-text">{e.targetSets}×</span>
               <button type="button" aria-label={`Mais séries em ${e.name}`} disabled={e.targetSets >= 10} onClick={() => updateExercise.mutate({ id: e.id, targetSets: e.targetSets + 1 })} className={`${iconBtn} size-8`}>+</button>
             </div>
-            <div className="flex gap-1">
+            <div className="ml-auto flex gap-1">
               <button type="button" aria-label={`Mover ${e.name} para cima`} disabled={i === 0} onClick={() => move(i, -1)} className={`${iconBtn} size-8`}><Icon name="up" size={14} /></button>
               <button type="button" aria-label={`Mover ${e.name} para baixo`} disabled={i === list.length - 1} onClick={() => move(i, 1)} className={`${iconBtn} size-8`}><Icon name="down" size={14} /></button>
               <button type="button" aria-label={`Tirar ${e.name} da ficha`} onClick={() => removeExercise.mutate(e.id)} className={`${iconBtn} size-8 hover:text-k-danger`}><Icon name="close" size={14} /></button>
@@ -113,7 +113,7 @@ export function Routines() {
   }
 
   return (
-    <div className="space-y-6 font-k-body text-k-text">
+    <div className="mx-auto max-w-3xl space-y-6 font-k-body text-k-text">
       <header>
         <Link to="/treino" className="font-k-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-k-muted hover:text-k-text">Voltar ao treino</Link>
         <h1 className="mt-2 font-k-display text-[40px] leading-10 tracking-[0.04em] sm:text-[56px] sm:leading-[56px]">MINHAS FICHAS</h1>
@@ -122,7 +122,7 @@ export function Routines() {
 
       <form onSubmit={create} className="flex gap-2">
         <input aria-label="Nome da nova ficha" className={field} value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Ex.: Treino A – Peito e bíceps" />
-        <KButton type="submit" variant="primary" disabled={!name.trim()}>Criar ficha</KButton>
+        <KButton type="submit" variant="primary" className="shrink-0 whitespace-nowrap" disabled={!name.trim()}>Criar ficha</KButton>
       </form>
 
       {routines.length === 0 && <p className="text-sm text-k-muted">Nenhuma ficha ainda. Crie a primeira acima.</p>}
