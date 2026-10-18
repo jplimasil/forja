@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ISODate } from '@rules/types.ts';
-import { supabase, unwrap } from '../lib/supabase';
+import { fetchAll, supabase, unwrap } from '../lib/supabase';
 import { queryClient, registerMutationDefaults } from '../lib/queryClient';
 import { notifyError } from '../lib/errors';
 
@@ -10,8 +10,8 @@ export function useCheckins() {
   return useQuery({
     queryKey: KEY,
     queryFn: async (): Promise<ISODate[]> => {
-      const rows = unwrap(await supabase.from('checkins').select('date').order('date'));
-      return (rows ?? []).map((r) => r.date as ISODate);
+      const rows = await fetchAll((from, to) => supabase.from('checkins').select('date').order('date').range(from, to));
+      return rows.map((r) => r.date as ISODate);
     },
   });
 }

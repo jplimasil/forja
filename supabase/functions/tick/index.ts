@@ -2,7 +2,7 @@
 // é decidido por planUserTick (regras puras e testadas em ../_shared/rules).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { localNow } from '../_shared/rules/dates.ts';
-import { planUserTick } from '../_shared/rules/tick.ts';
+import { checkinsSince, planUserTick } from '../_shared/rules/tick.ts';
 import type { ClosedWeek, Intensity } from '../_shared/rules/types.ts';
 import { sendToUser } from './push.ts';
 
@@ -26,18 +26,25 @@ Deno.serve(async (req) => {
   for (const s of users ?? []) {
     const uid: string = s.user_id;
     try {
-      const [goals, checkins, freezes, weeks] = await Promise.all([
+      const [goals, freezes, weeks] = await Promise.all([
         db.from('goal_history').select('effective_week_start, weekly_goal').eq('user_id', uid),
-        db.from('checkins').select('date').eq('user_id', uid),
         db.from('week_freezes').select('week_start').eq('user_id', uid),
         db.from('weeks').select('week_start, goal, done, status, penalty_amount, penalty_paid_at').eq('user_id', uid),
       ]);
-      for (const r of [goals, checkins, freezes, weeks]) if (r.error) throw r.error;
+      for (const r of [goals, freezes, weeks]) if (r.error) throw r.error;
+      const closed = weeks.data!.map((w): ClosedWeek => ({
+        weekStart: w.week_start, goal: w.goal, done: w.done, status: w.status,
+        penaltyAmount: Number(w.penalty_amount), penaltyPaidAt: w.penalty_paid_at,
+      }));
+      const accountCreatedDate = localNow(new Date(s.created_at), s.timezone).date;
+      // Só as semanas ainda abertas: o histórico inteiro passaria do limite de 1000 linhas da API.
+      const checkins = await db.from('checkins').select('date').eq('user_id', uid).gte('date', checkinsSince(closed, accountCreatedDate));
+      if (checkins.error) throw checkins.error;
 
       const now = localNow(new Date(), s.timezone);
       const plan = planUserTick({
         now,
-        accountCreatedDate: localNow(new Date(s.created_at), s.timezone).date,
+        accountCreatedDate,
         settings: {
           preferredHour: s.preferred_hour,
           intensity: s.notification_intensity as Intensity,
@@ -48,10 +55,7 @@ Deno.serve(async (req) => {
         goals: goals.data!.map((g) => ({ effectiveWeekStart: g.effective_week_start, weeklyGoal: g.weekly_goal })),
         checkinDates: checkins.data!.map((c) => c.date),
         freezes: freezes.data!.map((f) => f.week_start),
-        closed: weeks.data!.map((w): ClosedWeek => ({
-          weekStart: w.week_start, goal: w.goal, done: w.done, status: w.status,
-          penaltyAmount: Number(w.penalty_amount), penaltyPaidAt: w.penalty_paid_at,
-        })),
+        closed,
       });
 
       if (plan.weeksToInsert.length) {

@@ -31,3 +31,10 @@ it('semana congelada fecha como frozen', () => {
     checkinDates: [], freezes: ['2026-10-19'], closed: [{ weekStart: '2026-10-12', goal: 4, done: 4, status: 'met', penaltyAmount: 0, penaltyPaidAt: null }] });
   expect(plan.weeksToInsert).toMatchObject([{ weekStart: '2026-10-19', status: 'frozen', penaltyAmount: 0 }]);
 });
+
+import { checkinsSince } from './tick.ts';
+it('checkinsSince busca só o necessário: semanas a fechar + atual', () => {
+  const closed = [{ weekStart: '2026-10-12', goal: 4, done: 4, status: 'met' as const, penaltyAmount: 0, penaltyPaidAt: null }];
+  expect(checkinsSince(closed, '2025-01-10')).toBe('2026-10-19');
+  expect(checkinsSince([], '2026-10-15')).toBe('2026-10-12');
+});

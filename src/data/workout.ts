@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ISODate } from '@rules/types.ts';
-import { supabase, unwrap } from '../lib/supabase';
+import { fetchAll, supabase, unwrap } from '../lib/supabase';
 import { queryClient, registerMutationDefaults } from '../lib/queryClient';
 import { notifyError } from '../lib/errors';
 
@@ -38,9 +38,9 @@ export function useSets() {
   return useQuery({
     queryKey: SETS,
     queryFn: async (): Promise<WorkoutSet[]> => {
-      const rows = unwrap(
-        await supabase.from('workout_sets').select('id, set_number, reps, weight_kg, checkins!inner(date), exercises!inner(name)'),
-      ) as unknown as SetRow[];
+      const rows = (await fetchAll((from, to) =>
+        supabase.from('workout_sets').select('id, set_number, reps, weight_kg, checkins!inner(date), exercises!inner(name)').order('id').range(from, to),
+      )) as unknown as SetRow[];
       return (rows ?? [])
         .map((r) => ({
           id: r.id,

@@ -21,6 +21,15 @@ export function countInWeek(dates: ISODate[], weekStart: ISODate): number {
   return dates.filter((d) => d >= weekStart && d < end).length;
 }
 
+/**
+ * Primeira data de check-in que a execução horária precisa ler: o início da primeira semana
+ * ainda não fechada (ou da semana de criação da conta). Evita ler o histórico inteiro.
+ */
+export function checkinsSince(closed: ClosedWeek[], accountCreatedDate: ISODate): ISODate {
+  const last = closed.reduce<ISODate | null>((m, w) => (!m || w.weekStart > m ? w.weekStart : m), null);
+  return last ? addDays(last, 7) : weekStartOf(accountCreatedDate);
+}
+
 /** Decide o que a execução horária deve gravar e enviar para um usuário. Puro: sem IO. */
 export function planUserTick(input: TickInput): TickPlan {
   const { now, settings } = input;
