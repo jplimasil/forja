@@ -6,6 +6,7 @@ import { AuthScreen } from './features/auth/AuthScreen';
 import { Onboarding } from './features/onboarding/Onboarding';
 import { Home } from './features/home/Home';
 import { Sos } from './features/sos/Sos';
+import { Workout } from './features/workout/Workout';
 import { PageTitle } from './ui/Card';
 
 function Placeholder({ title }: { title: string }) {
@@ -43,7 +44,7 @@ export function App() {
           <Route element={<AppShell />}>
             <Route index element={<Home />} />
             <Route path="sos" element={<Sos />} />
-            <Route path="treino" element={<Placeholder title="Treino" />} />
+            <Route path="treino" element={<Workout />} />
             <Route path="corpo" element={<Placeholder title="Corpo" />} />
             <Route path="historico" element={<Placeholder title="Histórico" />} />
             <Route path="ajustes" element={<Placeholder title="Ajustes" />} />
