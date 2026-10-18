@@ -1,141 +1,184 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router';
+import type { ISODate } from '@rules/types.ts';
 import { useWeekState } from '../../data/useWeekState';
-import { useCheckin } from '../../data/checkins';
-import { useAddSet, useRemoveSets, useExercises, useSets, type WorkoutSet } from '../../data/workout';
-import { Button } from '../../ui/Button';
-import { PageTitle } from '../../ui/Card';
-import { LineChartCard } from '../../ui/LineChartCard';
-import { inputClass } from '../onboarding/fields';
-import { lastSession, topSetByDate } from './progress';
+import { useCheckinDetails, useRegisterDay } from '../../data/checkins';
+import { useAddSet, useExercises, useRemoveSets, useSets, useUpdateExercise, useUpdateSet, type WorkoutSet } from '../../data/workout';
+import { useRoutines } from '../../data/routines';
+import { MuscleTags } from './MuscleTags';
+import { RoutinePicker } from './RoutinePicker';
+import { ExerciseCard } from './ExerciseCard';
+import { AddExercise } from './AddExercise';
+import { Evolution } from './Evolution';
+import type { MuscleGroup } from './muscles';
+import { dayPRs, dayProgress, planRoutineSets, previousSessionDate, tonnage, tonnageDelta, type DayDetail, type Routine } from './stats';
+import { Icon } from './kinetic/Icon';
+import { KButton, KCard, KLabel, StatTile } from './kinetic/ui';
 
-const parseNum = (s: string) => Number(s.replace(',', '.'));
+const groupsOf = (r: Routine): MuscleGroup[] => [...new Set(r.exercises.map((e) => e.muscleGroup).filter((g): g is MuscleGroup => g !== null))];
 
-function groupByExercise(sets: WorkoutSet[]): [string, WorkoutSet[]][] {
+function RegisterCard({ date, routines, sets, checkedIn }: { date: ISODate; routines: Routine[]; sets: WorkoutSet[]; checkedIn: boolean }) {
+  const registerDay = useRegisterDay();
+  const addSet = useAddSet();
+  const [routineId, setRoutineId] = useState<string | null | undefined>(undefined);
+  const [muscles, setMuscles] = useState<MuscleGroup[]>([]);
+  const routine = routines.find((r) => r.id === routineId);
+  const canRegister = !!routine || muscles.length > 0;
+
+  function pick(id: string | null) {
+    setRoutineId(id);
+    const r = routines.find((x) => x.id === id);
+    if (r) setMuscles(groupsOf(r));
+  }
+
+  function register() {
+    registerDay.mutate({ date, routineId: routine?.id ?? null, muscles });
+    if (routine) {
+      for (const planned of planRoutineSets({ routine, sets, date })) addSet.mutate({ ...planned, id: crypto.randomUUID() });
+    }
+  }
+
+  return (
+    <KCard className="space-y-4 p-4">
+      <div>
+        <KLabel>Check-in diário</KLabel>
+        <h2 className="mt-1 font-k-body text-base font-semibold text-k-text">Qual foi o treino de hoje?</h2>
+        {checkedIn && <p className="mt-1 font-k-body text-xs text-k-lime">Check-in feito. Complete o treino de hoje.</p>}
+      </div>
+      <RoutinePicker routines={routines} value={routineId} onChange={pick} />
+      <div className="space-y-2">
+        <KLabel>Grupos musculares</KLabel>
+        <MuscleTags value={muscles} onChange={setMuscles} />
+      </div>
+      <KButton variant="primary" className="h-14 w-full text-base" disabled={!canRegister} onClick={register}>
+        <Icon name="bolt" size={20} /> Registrar treino
+      </KButton>
+      {!canRegister && <p className="text-center font-k-body text-xs text-k-muted">Escolha uma ficha ou os músculos que você treinou.</p>}
+    </KCard>
+  );
+}
+
+function DayLog({ date, detail, routines, sets }: { date: ISODate; detail: DayDetail; routines: Routine[]; sets: WorkoutSet[] }) {
+  const registerDay = useRegisterDay();
+  const addSet = useAddSet();
+  const updateSet = useUpdateSet();
+  const updateExercise = useUpdateExercise();
+  const removeSets = useRemoveSets();
+  const exercises = useExercises().data ?? [];
+  const details = useCheckinDetails().data ?? {};
+  const routine = routines.find((r) => r.id === detail.routineId);
+
+  const today = useMemo(() => sets.filter((s) => s.date === date), [sets, date]);
+  const progress = dayProgress(sets, date);
+  const tons = tonnage(sets, date);
+  const prev = previousSessionDate({ sets, details, date, routineId: detail.routineId });
+  const delta = tonnageDelta(tons, prev ? tonnage(sets, prev) : null);
+  const prs = dayPRs(sets, date);
+
+  // Ordem dos exercícios: a da ficha; os extras depois.
+  const order = (name: string) => {
+    const i = routine?.exercises.findIndex((e) => e.name.toLowerCase() === name.toLowerCase()) ?? -1;
+    return i === -1 ? 1000 : i;
+  };
   const groups = new Map<string, WorkoutSet[]>();
-  for (const s of sets) groups.set(s.exercise, [...(groups.get(s.exercise) ?? []), s]);
-  return [...groups.entries()];
+  for (const s of today) groups.set(s.exercise, [...(groups.get(s.exercise) ?? []), s]);
+  const cards = [...groups.entries()]
+    .map(([name, list]) => ({ name, list: [...list].sort((a, b) => a.setNumber - b.setNumber) }))
+    .sort((a, b) => order(a.name) - order(b.name));
+
+  function addSetTo(name: string, list: WorkoutSet[]) {
+    const last = list[list.length - 1];
+    addSet.mutate({ ...last, id: crypto.randomUUID(), exercise: name, setNumber: last.setNumber + 1, rpe: null, done: false });
+  }
+
+  return (
+    <div className="space-y-6">
+      <KCard className="space-y-3 p-4">
+        <div className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-k-lime" aria-hidden="true" />
+          <KLabel className="text-k-lime">Treino registrado // {routine?.name ?? 'Treino livre'}</KLabel>
+        </div>
+        <MuscleTags value={detail.muscles} onChange={(muscles) => registerDay.mutate({ date, routineId: null, muscles })} />
+      </KCard>
+
+      <section className="grid grid-cols-2 gap-2" aria-label="Resumo do dia">
+        <StatTile label="Tonelagem hoje" value={tons.toLocaleString('pt-BR', { maximumFractionDigits: 0 })} unit="kg" delta={delta} />
+        <StatTile label="Séries concluídas" value={`${progress.setsDone}/${progress.setsTotal}`} hint={progress.setsTotal ? undefined : 'Adicione um exercício'} />
+      </section>
+
+      <section className="space-y-3" aria-label="Exercícios do dia">
+        <div className="flex items-center gap-2">
+          <h2 className="font-k-body text-base font-semibold uppercase text-k-text">Exercícios programados</h2>
+          <span className="rounded-full bg-k-3 px-2 py-0.5 font-k-mono text-[11px] font-semibold text-k-muted">
+            {progress.exercisesDone}/{progress.exercisesTotal}
+          </span>
+        </div>
+        {cards.map(({ name, list }) => (
+          <ExerciseCard
+            key={name}
+            name={name}
+            sets={list}
+            muscleGroup={list[0].muscleGroup}
+            kind={list[0].kind}
+            prs={prs}
+            onUpdate={(p) => updateSet.mutate(p)}
+            onAddSet={() => addSetTo(name, list)}
+            onEditMeta={(muscleGroup, kind) => updateExercise.mutate({ name, muscleGroup, kind })}
+            onRemove={() => removeSets.mutate(list.map((s) => s.id))}
+          />
+        ))}
+        <AddExercise
+          exercises={exercises}
+          onAdd={(e) =>
+            addSet.mutate({
+              id: crypto.randomUUID(), date, exercise: e.name, muscleGroup: e.muscleGroup, kind: e.kind,
+              setNumber: 1, reps: null, weightKg: null, rpe: null, done: false,
+            })
+          }
+        />
+      </section>
+    </div>
+  );
 }
 
 export function Workout() {
   const state = useWeekState();
-  const checkin = useCheckin();
   const sets = useSets().data ?? [];
-  const exercises = useExercises().data ?? [];
-  const addSet = useAddSet();
-  const deleteSet = useRemoveSets();
-
-  const [exercise, setExercise] = useState('');
-  const [reps, setReps] = useState('10');
-  const [weight, setWeight] = useState('');
-  const [chartExercise, setChartExercise] = useState<string | null>(null);
-
-  const today = state?.now.date ?? '';
-  const todaySets = useMemo(() => sets.filter((s) => s.date === today), [sets, today]);
-  const previous = useMemo(() => lastSession(sets, today), [sets, today]);
-  const chartNames = useMemo(() => [...new Set(sets.map((s) => s.exercise))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [sets]);
-  const selected = chartExercise ?? (todaySets[todaySets.length - 1] ?? sets[sets.length - 1])?.exercise ?? null;
-
+  const details = useCheckinDetails().data ?? {};
+  const routines = useRoutines().data ?? [];
   if (!state) return null;
 
-  function nextSetNumber(name: string): number {
-    return todaySets.filter((s) => s.exercise.toLowerCase() === name.toLowerCase()).length + 1;
-  }
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    const name = exercise.trim();
-    const r = parseNum(reps);
-    const w = parseNum(weight || '0');
-    if (!name || !(r > 0) || !(w >= 0)) return;
-    addSet.mutate({ id: crypto.randomUUID(), date: today, exercise: name, muscleGroup: null, kind: null, setNumber: nextSetNumber(name), reps: Math.round(r), weightKg: w, rpe: null, done: true });
-  }
-
-  function repeatLast() {
-    for (const s of previous) addSet.mutate({ ...s, id: crypto.randomUUID(), date: today });
-  }
+  const date = state.now.date;
+  const detail = details[date];
+  const hasToday = sets.some((s) => s.date === date);
+  const registered = state.checkedInToday && (!!detail?.routineId || (detail?.muscles.length ?? 0) > 0 || hasToday);
 
   return (
-    <div className="space-y-10">
-      <PageTitle sub="Registre séries, repetições e carga. A evolução aparece no gráfico.">Treino</PageTitle>
+    <div className="space-y-6 font-k-body text-k-text">
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <KLabel>{registered ? 'Status // treino do dia' : 'Status // sem treino hoje'}</KLabel>
+          <h1 className="font-k-display text-[40px] leading-10 tracking-[0.04em] text-k-text sm:text-[56px] sm:leading-[56px]">TREINO</h1>
+          <p className="mt-1 text-xs text-k-muted">Registre séries, repetições e carga. A evolução aparece no fim da página.</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <span className="flex items-center gap-1.5 rounded-k bg-k-3 px-2.5 py-1" aria-label={`Streak: ${state.streak} semanas`}>
+            <Icon name="fire" size={16} className="text-k-lime" />
+            <span className="font-k-mono text-[11px] font-semibold text-k-lime">{state.streak} SEM</span>
+          </span>
+          <Link to="/treino/fichas" className="flex min-h-9 items-center gap-1 font-k-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-k-lime hover:underline">
+            <Icon name="list" size={14} /> Minhas fichas
+          </Link>
+        </div>
+      </header>
 
-      {!state.checkedInToday ? (
-        <section className="rounded-2xl border border-line p-6">
-          <p className="font-head text-2xl font-semibold">Primeiro, o check-in de hoje</p>
-          <p className="mt-2 text-muted">As séries ficam ligadas ao dia de treino. Marque que treinou e registre o que fez.</p>
-          <Button className="mt-5" onClick={() => checkin.mutate(today)}>Treinei hoje</Button>
-        </section>
+      {registered ? (
+        <DayLog date={date} detail={detail ?? { routineId: null, muscles: [] }} routines={routines} sets={sets} />
       ) : (
-        <section className="space-y-6" aria-label="Treino de hoje">
-          <form onSubmit={submit} className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_6rem_7rem_auto] sm:items-end">
-            <label className="col-span-2 block space-y-1.5 sm:col-span-1">
-              <span className="text-sm text-muted">Exercício</span>
-              <input className={inputClass} list="exercicios" required value={exercise} onChange={(e) => setExercise(e.target.value)} placeholder="Ex.: Supino reto" />
-              <datalist id="exercicios">{exercises.map((e) => <option key={e.id} value={e.name} />)}</datalist>
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-sm text-muted">Repetições</span>
-              <input className={`${inputClass} tabular`} inputMode="numeric" required value={reps} onChange={(e) => setReps(e.target.value)} />
-            </label>
-            <label className="block space-y-1.5">
-              <span className="text-sm text-muted">Carga (kg)</span>
-              <input className={`${inputClass} tabular`} inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="0" />
-            </label>
-            <Button type="submit" className="col-span-2 h-[3.25rem] sm:col-span-1">Adicionar série</Button>
-          </form>
-
-          {todaySets.length === 0 && previous.length > 0 && (
-            <Button variant="ghost" onClick={repeatLast}>
-              Repetir último treino ({previous.length} {previous.length === 1 ? 'série' : 'séries'} de {previous[0].date.slice(8)}/{previous[0].date.slice(5, 7)})
-            </Button>
-          )}
-
-          {todaySets.length > 0 && (
-            <div className="space-y-5">
-              {groupByExercise(todaySets).map(([name, list]) => (
-                <div key={name}>
-                  <p className="font-head text-xl font-semibold">{name}</p>
-                  <ul className="mt-2 divide-y divide-line rounded-xl bg-card">
-                    {list.map((s) => (
-                      <li key={s.id} className="flex items-center gap-4 px-4 py-3">
-                        <span className="w-6 text-sm text-muted tabular">{s.setNumber}</span>
-                        <span className="flex-1 tabular">
-                          {s.reps} × <span className="font-semibold">{(s.weightKg ?? 0).toLocaleString('pt-BR')} kg</span>
-                        </span>
-                        <button type="button" onClick={() => deleteSet.mutate([s.id])} className="text-sm text-muted hover:text-danger" aria-label={`Apagar série ${s.setNumber} de ${name}`}>
-                          Apagar
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        <RegisterCard date={date} routines={routines} sets={sets} checkedIn={state.checkedInToday} />
       )}
 
-      <section className="space-y-4" aria-label="Evolução de carga">
-        <h2 className="font-head text-2xl font-bold">Evolução</h2>
-        {chartNames.length === 0 ? (
-          <p className="text-muted">Quando você registrar séries, a maior carga de cada treino aparece aqui.</p>
-        ) : (
-          <>
-            <label className="block max-w-xs space-y-1.5">
-              <span className="text-sm text-muted">Exercício</span>
-              <select className={inputClass} value={selected ?? ''} onChange={(e) => setChartExercise(e.target.value)}>
-                {chartNames.map((n) => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </label>
-            {selected && (
-              <LineChartCard
-                title={`Maior carga: ${selected}`}
-                unit="kg"
-                data={topSetByDate(sets, selected).map((p) => ({ x: p.date, y: p.weightKg }))}
-              />
-            )}
-          </>
-        )}
-      </section>
+      <Evolution sets={sets} today={date} />
     </div>
   );
 }
