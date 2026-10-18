@@ -1,7 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useWeekState } from '../../data/useWeekState';
 import { useCheckin } from '../../data/checkins';
-import { useAddSet, useDeleteSet, useExercises, useSets, type WorkoutSet } from '../../data/workout';
+import { useAddSet, useRemoveSets, useExercises, useSets, type WorkoutSet } from '../../data/workout';
 import { Button } from '../../ui/Button';
 import { PageTitle } from '../../ui/Card';
 import { LineChartCard } from '../../ui/LineChartCard';
@@ -22,7 +22,7 @@ export function Workout() {
   const sets = useSets().data ?? [];
   const exercises = useExercises().data ?? [];
   const addSet = useAddSet();
-  const deleteSet = useDeleteSet();
+  const deleteSet = useRemoveSets();
 
   const [exercise, setExercise] = useState('');
   const [reps, setReps] = useState('10');
@@ -70,7 +70,7 @@ export function Workout() {
             <label className="col-span-2 block space-y-1.5 sm:col-span-1">
               <span className="text-sm text-muted">Exercício</span>
               <input className={inputClass} list="exercicios" required value={exercise} onChange={(e) => setExercise(e.target.value)} placeholder="Ex.: Supino reto" />
-              <datalist id="exercicios">{exercises.map((n) => <option key={n} value={n} />)}</datalist>
+              <datalist id="exercicios">{exercises.map((e) => <option key={e.id} value={e.name} />)}</datalist>
             </label>
             <label className="block space-y-1.5">
               <span className="text-sm text-muted">Repetições</span>
@@ -101,7 +101,7 @@ export function Workout() {
                         <span className="flex-1 tabular">
                           {s.reps} × <span className="font-semibold">{(s.weightKg ?? 0).toLocaleString('pt-BR')} kg</span>
                         </span>
-                        <button type="button" onClick={() => deleteSet.mutate(s.id)} className="text-sm text-muted hover:text-danger" aria-label={`Apagar série ${s.setNumber} de ${name}`}>
+                        <button type="button" onClick={() => deleteSet.mutate([s.id])} className="text-sm text-muted hover:text-danger" aria-label={`Apagar série ${s.setNumber} de ${name}`}>
                           Apagar
                         </button>
                       </li>

@@ -19,14 +19,17 @@ export interface WorkoutSet {
   done: boolean;
 }
 
+export interface ExerciseInfo { id: string; name: string; muscleGroup: MuscleGroup | null; kind: ExerciseKind | null }
+
 const SETS = ['sets'];
+const EXERCISES = ['exercises'];
 
 export function useExercises() {
   return useQuery({
-    queryKey: ['exercises'],
-    queryFn: async (): Promise<string[]> => {
-      const rows = unwrap(await supabase.from('exercises').select('name').order('name'));
-      return (rows ?? []).map((r) => r.name as string);
+    queryKey: EXERCISES,
+    queryFn: async (): Promise<ExerciseInfo[]> => {
+      const rows = unwrap(await supabase.from('exercises').select('id, name, muscle_group, kind').order('name'));
+      return (rows ?? []).map((r) => ({ id: r.id, name: r.name, muscleGroup: r.muscle_group, kind: r.kind }));
     },
   });
 }
@@ -34,31 +37,39 @@ export function useExercises() {
 interface SetRow {
   id: string;
   set_number: number;
-  reps: number;
-  weight_kg: number | string;
+  reps: number | null;
+  weight_kg: number | string | null;
+  rpe: number | string | null;
+  done: boolean;
   checkins: { date: ISODate };
-  exercises: { name: string };
+  exercises: { name: string; muscle_group: MuscleGroup | null; kind: ExerciseKind | null };
 }
+
+const num = (v: number | string | null) => (v === null ? null : Number(v));
 
 export function useSets() {
   return useQuery({
     queryKey: SETS,
     queryFn: async (): Promise<WorkoutSet[]> => {
       const rows = (await fetchAll((from, to) =>
-        supabase.from('workout_sets').select('id, set_number, reps, weight_kg, checkins!inner(date), exercises!inner(name)').order('id').range(from, to),
+        supabase
+          .from('workout_sets')
+          .select('id, set_number, reps, weight_kg, rpe, done, checkins!inner(date), exercises!inner(name, muscle_group, kind)')
+          .order('id')
+          .range(from, to),
       )) as unknown as SetRow[];
-      return (rows ?? [])
+      return rows
         .map((r) => ({
           id: r.id,
           date: r.checkins.date,
           exercise: r.exercises.name,
-          muscleGroup: null,
-          kind: null,
+          muscleGroup: r.exercises.muscle_group,
+          kind: r.exercises.kind,
           setNumber: r.set_number,
           reps: r.reps,
-          weightKg: Number(r.weight_kg),
-          rpe: null,
-          done: true,
+          weightKg: num(r.weight_kg),
+          rpe: num(r.rpe),
+          done: r.done,
         }))
         .sort((a, b) => (a.date === b.date ? a.setNumber - b.setNumber : a.date < b.date ? -1 : 1));
     },
@@ -75,6 +86,10 @@ registerMutationDefaults<WorkoutSet>(['addSet'], {
         p_set_number: s.setNumber,
         p_reps: s.reps,
         p_weight_kg: s.weightKg,
+        p_rpe: s.rpe,
+        p_done: s.done,
+        p_muscle_group: s.muscleGroup,
+        p_kind: s.kind,
       }),
     ),
   onMutate: async (s) => {
@@ -87,7 +102,7 @@ registerMutationDefaults<WorkoutSet>(['addSet'], {
   },
   onSettled: () => {
     void queryClient.invalidateQueries({ queryKey: SETS });
-    void queryClient.invalidateQueries({ queryKey: ['exercises'] });
+    void queryClient.invalidateQueries({ queryKey: EXERCISES });
   },
 });
 
@@ -95,13 +110,61 @@ export function useAddSet() {
   return useMutation<unknown, Error, WorkoutSet>({ mutationKey: ['addSet'] });
 }
 
-export function useDeleteSet() {
+export type SetPatch = { id: string } & Partial<Pick<WorkoutSet, 'reps' | 'weightKg' | 'rpe' | 'done'>>;
+
+function patchRow(p: SetPatch): Record<string, unknown> {
+  const row: Record<string, unknown> = {};
+  if (p.reps !== undefined) row.reps = p.reps;
+  if (p.weightKg !== undefined) row.weight_kg = p.weightKg;
+  if (p.rpe !== undefined) row.rpe = p.rpe;
+  if (p.done !== undefined) row.done = p.done;
+  return row;
+}
+
+// Marcar ✓ e editar carga/reps/RPE: na fila offline, em ordem, com desfazer se o servidor recusar.
+registerMutationDefaults<SetPatch, { previous: WorkoutSet[] | undefined }>(['updateSet'], {
+  mutationFn: async (p) => unwrap(await supabase.from('workout_sets').update(patchRow(p)).eq('id', p.id)),
+  onMutate: async (p) => {
+    await queryClient.cancelQueries({ queryKey: SETS });
+    const previous = queryClient.getQueryData<WorkoutSet[]>(SETS);
+    const { id, ...changes } = p;
+    queryClient.setQueryData<WorkoutSet[]>(SETS, (l) => (l ?? []).map((s) => (s.id === id ? { ...s, ...changes } : s)));
+    return { previous };
+  },
+  onError: (err, _p, ctx) => {
+    queryClient.setQueryData(SETS, ctx?.previous);
+    notifyError(err);
+  },
+  onSettled: () => void queryClient.invalidateQueries({ queryKey: SETS }),
+});
+
+export function useUpdateSet() {
+  return useMutation<unknown, Error, SetPatch>({ mutationKey: ['updateSet'] });
+}
+
+export function useUpdateExercise() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      unwrap(await supabase.from('workout_sets').delete().eq('id', id));
+    mutationFn: async (e: { name: string; muscleGroup: MuscleGroup | null; kind: ExerciseKind | null }) => {
+      unwrap(await supabase.from('exercises').update({ muscle_group: e.muscleGroup, kind: e.kind }).ilike('name', e.name));
     },
-    onMutate: (id) => qc.setQueryData<WorkoutSet[]>(SETS, (l) => (l ?? []).filter((x) => x.id !== id)),
+    onError: notifyError,
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: EXERCISES });
+      void qc.invalidateQueries({ queryKey: SETS });
+      void qc.invalidateQueries({ queryKey: ['routines'] });
+    },
+  });
+}
+
+/** Remove do treino do dia as séries de um exercício (a ficha não muda). */
+export function useRemoveSets() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      unwrap(await supabase.from('workout_sets').delete().in('id', ids));
+    },
+    onMutate: (ids) => qc.setQueryData<WorkoutSet[]>(SETS, (l) => (l ?? []).filter((x) => !ids.includes(x.id))),
     onError: notifyError,
     onSettled: () => qc.invalidateQueries({ queryKey: SETS }),
   });
