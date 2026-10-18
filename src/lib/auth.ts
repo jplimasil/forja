@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { supabase } from './supabase';
+import { isSupabaseConfigured, supabase } from './supabase';
 import { clearPersistedCache } from './queryClient';
 
 export function useSession(): { session: Session | null; loading: boolean } {
@@ -25,6 +25,11 @@ const AUTH_ERRORS: Record<string, string> = {
 };
 
 export function translateAuthError(message: string): string {
+  if (/failed to fetch|load failed|networkerror/i.test(message)) {
+    return isSupabaseConfigured
+      ? 'Não foi possível conectar ao servidor. Verifique a internet e tente de novo.'
+      : 'O app foi publicado sem a configuração do servidor (VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY). Configure as variáveis e publique de novo.';
+  }
   if (message.startsWith('Password should be at least')) return 'A senha precisa ter pelo menos 6 caracteres.';
   return AUTH_ERRORS[message] ?? message;
 }
