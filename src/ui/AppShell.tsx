@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router';
 import type { ReactNode } from 'react';
+import { PendingSyncBadge } from './PendingSyncBadge';
 
 const icon = (d: ReactNode) => (
   <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -43,6 +44,7 @@ export function AppShell() {
           ))}
         </ul>
       </nav>
+      <PendingSyncBadge />
       <main className="mx-auto w-full max-w-5xl px-4 pb-28 pt-[max(1.25rem,env(safe-area-inset-top))] sm:px-6 lg:px-10 lg:pb-12 lg:pt-10">
         <Outlet />
       </main>

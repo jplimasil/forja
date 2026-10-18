@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { onErrorNotice } from '../lib/errors';
 
 type Tone = 'ok' | 'error';
 interface ToastItem { id: number; msg: string; tone: Tone }
@@ -19,6 +20,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setItems((list) => [...list, { id, msg, tone }]);
     setTimeout(() => setItems((list) => list.filter((t) => t.id !== id)), 4500);
   }, []);
+  useEffect(() => onErrorNotice((msg) => show(msg, 'error')), [show]);
   const api = useMemo(() => ({ show }), [show]);
   return (
     <ToastContext.Provider value={api}>

@@ -23,8 +23,16 @@ const persister = createSyncStoragePersister({
  * Mutações retomáveis precisam de uma função registrada por chave: depois de recarregar a página,
  * a fila persistida só guarda chave + variáveis, e é por aqui que o React Query reencontra a função.
  */
-export function registerMutationDefaults<TVars>(key: string[], fn: MutationFunction<unknown, TVars>): void {
-  queryClient.setMutationDefaults(key, { mutationFn: fn as MutationFunction<unknown, unknown> });
+export function registerMutationDefaults<TVars, TContext = unknown>(
+  key: string[],
+  options: {
+    mutationFn: MutationFunction<unknown, TVars>;
+    onMutate?: (vars: TVars) => TContext | Promise<TContext>;
+    onError?: (err: Error, vars: TVars, context: TContext | undefined) => void;
+    onSettled?: () => void;
+  },
+): void {
+  queryClient.setMutationDefaults(key, options as Parameters<typeof queryClient.setMutationDefaults>[1]);
 }
 
 export function clearPersistedCache(): void {
