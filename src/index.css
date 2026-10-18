@@ -3,6 +3,15 @@
 @import '@fontsource/barlow-condensed/latin-500.css';
 @import '@fontsource/barlow-condensed/latin-600.css';
 @import '@fontsource/barlow-condensed/latin-700.css';
+/* Kinetic Stealth (aba Treino; as outras abas migram aos poucos) */
+@import '@fontsource/bebas-neue/latin-400.css';
+@import '@fontsource/montserrat/latin-400.css';
+@import '@fontsource/montserrat/latin-500.css';
+@import '@fontsource/montserrat/latin-600.css';
+@import '@fontsource/montserrat/latin-700.css';
+@import '@fontsource/jetbrains-mono/latin-500.css';
+@import '@fontsource/jetbrains-mono/latin-600.css';
+@import '@fontsource/jetbrains-mono/latin-700.css';
 @import 'tailwindcss';
 
 @theme {
@@ -16,6 +25,22 @@
   --color-warn: #ff6b2c;
   --color-danger: #ff3b3b;
   --color-ice: #8fa8c8;
+
+  /* Kinetic Stealth — ver docs/superpowers/specs/2026-10-18-treino-kinetic-design.md §6 */
+  --color-k-base: #0b0d0f;
+  --color-k-1: #121519;
+  --color-k-2: #181c22;
+  --color-k-3: #20252e;
+  --color-k-line: #242a35;
+  --color-k-lime: #ccff00;
+  --color-k-text: #ffffff;
+  --color-k-muted: #9ba3af;
+  --color-k-dim: #525c6a;
+  --color-k-danger: #ff3344;
+  --font-k-display: 'Bebas Neue', 'Arial Narrow', sans-serif;
+  --font-k-body: 'Montserrat', system-ui, sans-serif;
+  --font-k-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --radius-k: 4px;
 
   --font-display: 'Anton', 'Impact', sans-serif;
   --font-head: 'Barlow Condensed', 'Arial Narrow', sans-serif;
