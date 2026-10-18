@@ -52,7 +52,7 @@ export function registerMutationDefaults<TVars, TContext = unknown>(
 }
 
 /** Só guarda no aparelho o que consegue ser retomado depois de recarregar (tem função registrada). */
-export function shouldPersistMutation(m: Mutation<unknown, unknown, unknown, unknown>): boolean {
+export function shouldPersistMutation(m: Mutation<unknown, Error, unknown, unknown>): boolean {
   const key = m.options.mutationKey;
   return m.state.isPaused && !!key && QUEUED.has(JSON.stringify(key));
 }
