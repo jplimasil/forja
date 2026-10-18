@@ -23,6 +23,9 @@ export function Onboarding() {
   async function finish() {
     setBusy(true);
     try {
+      // Meta primeiro: gravar as configurações tira a pessoa do primeiro acesso, e sem meta
+      // nenhuma semana fecha nem lembrete sai. Se as configurações falharem, ela tenta de novo aqui.
+      await setGoal.mutateAsync({ weeklyGoal: goal });
       await saveSettings.mutateAsync({
         preferredHour: hour,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo',
@@ -31,7 +34,6 @@ export function Onboarding() {
         intensity: 'normal',
         motivations: motivations.map((m) => m.trim()).filter(Boolean),
       });
-      await setGoal.mutateAsync({ weeklyGoal: goal });
       navigate('/', { replace: true });
     } catch (err) {
       notifyError(err);

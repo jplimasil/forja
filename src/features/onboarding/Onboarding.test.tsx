@@ -45,3 +45,13 @@ it('configura meta, horário, multa e motivos e grava tudo ao concluir', async (
   expect(setGoal).toHaveBeenCalledWith({ weeklyGoal: 4 });
   expect(await screen.findByText('tela inicial')).toBeInTheDocument();
 });
+
+it('grava a meta antes das configurações (sem meta o app não cobra)', async () => {
+  saveSettings.mockClear();
+  setGoal.mockClear();
+  const user = setup();
+  for (let i = 0; i < 4; i++) await user.click(screen.getByRole('button', { name: 'Próximo' }));
+  await user.click(screen.getByRole('button', { name: 'Começar' }));
+  await screen.findByText('tela inicial');
+  expect(setGoal.mock.invocationCallOrder[0]).toBeLessThan(saveSettings.mock.invocationCallOrder[0]);
+});
