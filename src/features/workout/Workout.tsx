@@ -22,8 +22,10 @@ function RegisterCard({ date, routines, sets, checkedIn }: { date: ISODate; rout
   const addSet = useAddSet();
   const [routineId, setRoutineId] = useState<string | null | undefined>(undefined);
   const [muscles, setMuscles] = useState<MuscleGroup[]>([]);
+  // evita registrar duas vezes num toque duplo, antes de a tela trocar de estado
+  const [submitted, setSubmitted] = useState(false);
   const routine = routines.find((r) => r.id === routineId);
-  const canRegister = !!routine || muscles.length > 0;
+  const canRegister = (!!routine || muscles.length > 0) && !submitted;
 
   function pick(id: string | null) {
     setRoutineId(id);
@@ -32,6 +34,8 @@ function RegisterCard({ date, routines, sets, checkedIn }: { date: ISODate; rout
   }
 
   function register() {
+    if (submitted) return;
+    setSubmitted(true);
     registerDay.mutate({ date, routineId: routine?.id ?? null, muscles });
     if (routine) {
       for (const planned of planRoutineSets({ routine, sets, date })) addSet.mutate({ ...planned, id: crypto.randomUUID() });
@@ -123,7 +127,10 @@ function DayLog({ date, detail, routines, sets }: { date: ISODate; detail: DayDe
             prs={prs}
             onUpdate={(p) => updateSet.mutate(p)}
             onAddSet={() => addSetTo(name, list)}
-            onEditMeta={(muscleGroup, kind) => updateExercise.mutate({ name, muscleGroup, kind })}
+            onEditMeta={(muscleGroup, kind) => {
+              const id = exercises.find((x) => x.name.toLowerCase() === name.toLowerCase())?.id;
+              if (id) updateExercise.mutate({ id, muscleGroup, kind });
+            }}
             onRemove={() => removeSets.mutate(list.map((s) => s.id))}
           />
         ))}

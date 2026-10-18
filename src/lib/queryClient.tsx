@@ -66,11 +66,29 @@ export function clearPersistedCache(): void {
   }
 }
 
+/** `buster`: trocar quando o formato dos dados em cache mudar, para o aparelho descartar o cache antigo. */
+export const persistOptions = {
+  persister,
+  maxAge: WEEK_MS,
+  buster: 'treino-v2',
+  dehydrateOptions: { shouldDehydrateMutation: shouldPersistMutation },
+};
+
+/**
+ * Recarrega as consultas só quando a fila offline esvaziar. Recarregar a cada item que sobe traria a lista
+ * do servidor ainda incompleta e as séries "sumiriam e voltariam" na tela durante a sincronização.
+ * Chamado no onSettled, quando a própria mutação ainda conta como pendente — por isso '<= 1'.
+ */
+export function invalidateWhenQueueIdle(...keys: string[][]): void {
+  if (queryClient.isMutating({ predicate: (m) => m.options.scope?.id === 'fila-offline' }) > 1) return;
+  for (const queryKey of keys) void queryClient.invalidateQueries({ queryKey });
+}
+
 export function AppQueryProvider({ children }: { children: ReactNode }) {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister, maxAge: WEEK_MS, dehydrateOptions: { shouldDehydrateMutation: shouldPersistMutation } }}
+      persistOptions={persistOptions}
       onSuccess={() => void queryClient.resumePausedMutations()}
     >
       {children}

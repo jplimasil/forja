@@ -7,6 +7,7 @@ import { useExercises } from '../../data/workout';
 import { AddExercise } from './AddExercise';
 import { KIND_LABELS, muscleLabel } from './muscles';
 import type { Routine } from './stats';
+import { nextPosition, reorder } from './routineOrder';
 import { Icon } from './kinetic/Icon';
 import { KButton, KCard, KLabel } from './kinetic/ui';
 
@@ -26,11 +27,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
   const list = routine.exercises;
 
   function move(i: number, dir: -1 | 1) {
-    const a = list[i];
-    const b = list[i + dir];
-    if (!b) return;
-    updateExercise.mutate({ id: a.id, position: b.position === a.position ? i + dir : b.position });
-    updateExercise.mutate({ id: b.id, position: b.position === a.position ? i : a.position });
+    for (const change of reorder(list, i, dir)) updateExercise.mutate(change);
   }
 
   function rename(e: FormEvent) {
@@ -93,7 +90,7 @@ function RoutineCard({ routine }: { routine: Routine }) {
           askSets
           label="Adicionar exercício à ficha"
           exercises={exercises}
-          onAdd={(x) => addExercise.mutate({ routineId: routine.id, ...x, position: list.length })}
+          onAdd={(x) => addExercise.mutate({ routineId: routine.id, ...x, position: nextPosition(list) })}
         />
       </div>
     </KCard>
@@ -108,7 +105,7 @@ export function Routines() {
   function create(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    save.mutate({ name, position: routines.length });
+    save.mutate({ name, position: nextPosition(routines) });
     setName('');
   }
 

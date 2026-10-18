@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type { ISODate } from '@rules/types.ts';
 import { fetchAll, supabase, unwrap } from '../lib/supabase';
-import { queryClient, registerMutationDefaults } from '../lib/queryClient';
+import { invalidateWhenQueueIdle, queryClient, registerMutationDefaults } from '../lib/queryClient';
 import { notifyError } from '../lib/errors';
 import type { DayDetail } from '../features/workout/stats';
 import type { MuscleGroup } from '../features/workout/muscles';
@@ -33,23 +33,29 @@ registerMutationDefaults<ISODate>(['checkin'], {
     queryClient.setQueryData<ISODate[]>(KEY, (l) => withoutDate(l, date));
     notifyError(err);
   },
-  onSettled: () => void queryClient.invalidateQueries({ queryKey: KEY }),
+  onSettled: () => invalidateWhenQueueIdle(KEY),
 });
 
-registerMutationDefaults<ISODate>(['undoCheckin'], {
+registerMutationDefaults<ISODate, { details: Record<ISODate, DayDetail> | undefined }>(['undoCheckin'], {
   mutationFn: async (date) => unwrap(await supabase.rpc('undo_checkin', { p_date: date })),
   onMutate: async (date) => {
     await queryClient.cancelQueries({ queryKey: KEY });
+    await queryClient.cancelQueries({ queryKey: DETAILS });
+    const details = queryClient.getQueryData<Record<ISODate, DayDetail>>(DETAILS);
     queryClient.setQueryData<ISODate[]>(KEY, (l) => withoutDate(l, date));
+    // sem check-in, o dia também perde ficha e músculos (o banco apaga a linha inteira)
+    queryClient.setQueryData<Record<ISODate, DayDetail>>(DETAILS, (d) => {
+      const { [date]: _removed, ...rest } = d ?? {};
+      return rest;
+    });
+    return { details };
   },
-  onError: (err, date) => {
+  onError: (err, date, ctx) => {
     queryClient.setQueryData<ISODate[]>(KEY, (l) => withDate(l, date));
+    queryClient.setQueryData(DETAILS, ctx?.details);
     notifyError(err);
   },
-  onSettled: () => {
-    void queryClient.invalidateQueries({ queryKey: KEY });
-    void queryClient.invalidateQueries({ queryKey: ['sets'] });
-  },
+  onSettled: () => invalidateWhenQueueIdle(KEY, DETAILS, ['sets']),
 });
 
 export function useCheckin() {
@@ -95,10 +101,7 @@ registerMutationDefaults<RegisterDayVars, { details: DetailsCache; checkins: ISO
     queryClient.setQueryData(DETAILS, ctx?.details);
     notifyError(err);
   },
-  onSettled: () => {
-    void queryClient.invalidateQueries({ queryKey: KEY });
-    void queryClient.invalidateQueries({ queryKey: DETAILS });
-  },
+  onSettled: () => invalidateWhenQueueIdle(KEY, DETAILS),
 });
 
 export function useRegisterDay() {

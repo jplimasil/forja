@@ -21,12 +21,12 @@ it('tonelagem soma só séries concluídas do dia', () => {
   expect(tonnage(sets, D)).toBe(800);
 });
 
-it('sessão anterior: mesma ficha; treino livre pega qualquer; ficha apagada vira livre', () => {
+it('sessão anterior: mesma ficha; treino livre pega qualquer; ficha sem sessão anterior não compara', () => {
   const details = { '2026-10-08': { routineId: 'A', muscles: [] }, '2026-10-10': { routineId: 'B', muscles: [] } };
   const sets = [s('x', '2026-10-08', 'Supino', 1, 80, 10), s('y', '2026-10-10', 'Remada', 1, 60, 10)];
   expect(previousSessionDate({ sets, details, date: D, routineId: 'A' })).toBe('2026-10-08');
   expect(previousSessionDate({ sets, details, date: D, routineId: null })).toBe('2026-10-10');
-  expect(previousSessionDate({ sets, details, date: D, routineId: 'apagada' })).toBe('2026-10-10');
+  expect(previousSessionDate({ sets, details, date: D, routineId: 'C' })).toBeNull();
 });
 
 it('tonnageDelta', () => {

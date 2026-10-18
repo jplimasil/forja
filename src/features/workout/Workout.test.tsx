@@ -80,3 +80,11 @@ it('check-in feito pelo Início pede para completar o treino', () => {
   renderWorkout();
   expect(screen.getByText('Check-in feito. Complete o treino de hoje.')).toBeInTheDocument();
 });
+
+it('toque duplo em Registrar treino não duplica o registro', async () => {
+  const user = renderWorkout();
+  await user.click(screen.getByRole('button', { name: 'Treino A' }));
+  await user.dblClick(screen.getByRole('button', { name: 'Registrar treino' }));
+  expect(registerDay).toHaveBeenCalledTimes(1);
+  expect(addSet).toHaveBeenCalledTimes(3);
+});

@@ -45,7 +45,7 @@ export function useRoutines() {
             position: e.position,
             targetSets: e.target_sets,
           }))
-          .sort((a, b) => a.position - b.position),
+          .sort((a, b) => a.position - b.position || (a.id < b.id ? -1 : 1)),
       }));
     },
   });
@@ -69,7 +69,10 @@ export function useSaveRoutine() {
 }
 
 export function useDeleteRoutine() {
-  return useRoutineMutation(async (id: string) => unwrap(await supabase.from('routines').delete().eq('id', id)));
+  const qc = useQueryClient();
+  const m = useRoutineMutation(async (id: string) => unwrap(await supabase.from('routines').delete().eq('id', id)));
+  // dias que usavam a ficha passam a treino livre no banco (routine_id nulo)
+  return { ...m, mutate: (id: string) => m.mutate(id, { onSettled: () => void qc.invalidateQueries({ queryKey: ['checkinDetails'] }) }) };
 }
 
 export interface NewRoutineExercise {
@@ -85,7 +88,9 @@ export interface NewRoutineExercise {
 export function useAddRoutineExercise() {
   return useRoutineMutation(async (e: NewRoutineExercise) => {
     const name = e.name.trim();
-    const existing = unwrap(await supabase.from('exercises').select('id, muscle_group, kind').ilike('name', name).maybeSingle());
+    // comparação exata sem diferenciar maiúsculas, feita aqui: um filtro por padrão trataria "_" e "%" como curingas
+    const all = unwrap(await supabase.from('exercises').select('id, name, muscle_group, kind')) ?? [];
+    const existing = all.find((x: { name: string }) => x.name.toLowerCase() === name.toLowerCase()) ?? null;
     let exerciseId: string;
     if (existing) {
       exerciseId = existing.id;

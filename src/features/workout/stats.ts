@@ -24,15 +24,12 @@ export function tonnage(sets: WorkoutSet[], date: ISODate): number {
 }
 
 /**
- * Sessão anterior para comparar a tonelagem: a mais recente com séries concluídas e a mesma ficha;
- * no treino livre (ou se nenhuma sessão usou a ficha, ex.: ficha apagada), a mais recente de qualquer tipo.
+ * Sessão anterior para comparar a tonelagem (spec §5): com ficha, a mais recente com a mesma ficha (ou nenhuma);
+ * no treino livre, a mais recente de qualquer tipo. Ficha apagada vira treino livre (routine_id fica nulo no banco).
  */
 export function previousSessionDate(p: { sets: WorkoutSet[]; details: Record<ISODate, DayDetail>; date: ISODate; routineId: string | null }): ISODate | null {
   const dates = [...new Set(p.sets.filter((s) => s.date < p.date && isDone(s)).map((s) => s.date))].sort().reverse();
-  if (p.routineId) {
-    const match = dates.find((d) => p.details[d]?.routineId === p.routineId);
-    if (match) return match;
-  }
+  if (p.routineId) return dates.find((d) => p.details[d]?.routineId === p.routineId) ?? null;
   return dates[0] ?? null;
 }
 

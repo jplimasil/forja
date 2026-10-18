@@ -50,7 +50,7 @@ export function ExerciseCard(p: {
 
       {menu && !editingMeta && (
         <div className="flex flex-col border-b border-k-line bg-k-2 p-2">
-          <button type="button" onClick={() => setEditingMeta(true)} className="flex min-h-11 items-center gap-2 rounded-k px-2 text-left font-k-body text-sm text-k-text hover:bg-k-3">
+          <button type="button" onClick={() => { setGroup(p.muscleGroup ?? ''); setKind(p.kind ?? ''); setEditingMeta(true); }} className="flex min-h-11 items-center gap-2 rounded-k px-2 text-left font-k-body text-sm text-k-text hover:bg-k-3">
             <Icon name="edit" size={16} /> Editar grupo e tipo
           </button>
           <button type="button" onClick={p.onRemove} className="flex min-h-11 items-center gap-2 rounded-k px-2 text-left font-k-body text-sm text-k-danger hover:bg-k-3">

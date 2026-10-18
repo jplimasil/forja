@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ISODate } from '@rules/types.ts';
 import { fetchAll, supabase, unwrap } from '../lib/supabase';
-import { queryClient, registerMutationDefaults } from '../lib/queryClient';
+import { invalidateWhenQueueIdle, queryClient, registerMutationDefaults } from '../lib/queryClient';
 import { notifyError } from '../lib/errors';
 import type { ExerciseKind, MuscleGroup } from '../features/workout/muscles';
 
@@ -100,10 +100,7 @@ registerMutationDefaults<WorkoutSet>(['addSet'], {
     queryClient.setQueryData<WorkoutSet[]>(SETS, (l) => (l ?? []).filter((x) => x.id !== s.id));
     notifyError(err);
   },
-  onSettled: () => {
-    void queryClient.invalidateQueries({ queryKey: SETS });
-    void queryClient.invalidateQueries({ queryKey: EXERCISES });
-  },
+  onSettled: () => invalidateWhenQueueIdle(SETS, EXERCISES),
 });
 
 export function useAddSet() {
@@ -135,18 +132,19 @@ registerMutationDefaults<SetPatch, { previous: WorkoutSet[] | undefined }>(['upd
     queryClient.setQueryData(SETS, ctx?.previous);
     notifyError(err);
   },
-  onSettled: () => void queryClient.invalidateQueries({ queryKey: SETS }),
+  onSettled: () => invalidateWhenQueueIdle(SETS),
 });
 
 export function useUpdateSet() {
   return useMutation<unknown, Error, SetPatch>({ mutationKey: ['updateSet'] });
 }
 
+/** Atualiza pelo id: nomes podem conter "_" ou "%", que num filtro por padrão casariam outros exercícios. */
 export function useUpdateExercise() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (e: { name: string; muscleGroup: MuscleGroup | null; kind: ExerciseKind | null }) => {
-      unwrap(await supabase.from('exercises').update({ muscle_group: e.muscleGroup, kind: e.kind }).ilike('name', e.name));
+    mutationFn: async (e: { id: string; muscleGroup: MuscleGroup | null; kind: ExerciseKind | null }) => {
+      unwrap(await supabase.from('exercises').update({ muscle_group: e.muscleGroup, kind: e.kind }).eq('id', e.id));
     },
     onError: notifyError,
     onSettled: () => {
@@ -157,15 +155,24 @@ export function useUpdateExercise() {
   });
 }
 
+// Remover um exercício do treino do dia: na mesma fila das séries, para não apagar antes de elas subirem
+// (senão as séries enfileiradas chegariam depois e o exercício "voltaria").
+registerMutationDefaults<string[], { previous: WorkoutSet[] | undefined }>(['removeSets'], {
+  mutationFn: async (ids) => unwrap(await supabase.from('workout_sets').delete().in('id', ids)),
+  onMutate: async (ids) => {
+    await queryClient.cancelQueries({ queryKey: SETS });
+    const previous = queryClient.getQueryData<WorkoutSet[]>(SETS);
+    queryClient.setQueryData<WorkoutSet[]>(SETS, (l) => (l ?? []).filter((x) => !ids.includes(x.id)));
+    return { previous };
+  },
+  onError: (err, _ids, ctx) => {
+    queryClient.setQueryData(SETS, ctx?.previous);
+    notifyError(err);
+  },
+  onSettled: () => invalidateWhenQueueIdle(SETS),
+});
+
 /** Remove do treino do dia as séries de um exercício (a ficha não muda). */
 export function useRemoveSets() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (ids: string[]) => {
-      unwrap(await supabase.from('workout_sets').delete().in('id', ids));
-    },
-    onMutate: (ids) => qc.setQueryData<WorkoutSet[]>(SETS, (l) => (l ?? []).filter((x) => !ids.includes(x.id))),
-    onError: notifyError,
-    onSettled: () => qc.invalidateQueries({ queryKey: SETS }),
-  });
+  return useMutation<unknown, Error, string[]>({ mutationKey: ['removeSets'] });
 }
