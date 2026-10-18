@@ -5,6 +5,9 @@ const RPC_ERRORS: Record<string, string> = {
   checkin_fora_da_janela: 'Esse dia já fechou. O check-in não foi registrado.',
   desfazer_fora_da_janela: 'Só dá para desfazer o check-in de hoje.',
   sem_checkin: 'Faça o check-in do dia antes de registrar séries.',
+  congelamento_limite_mensal: 'Você já congelou uma semana este mês.',
+  congelamento_meta_batida: 'A meta desta semana já foi batida.',
+  congelamento_ja_existe: 'Esta semana já está congelada.',
   nao_autenticado: 'Sua sessão expirou. Entre de novo.',
 };
 

@@ -18,8 +18,9 @@ export function useFreezes() {
 export function useFreeze() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (weekStart: ISODate) => {
-      unwrap(await supabase.from('week_freezes').insert({ week_start: weekStart }));
+    // O servidor decide a semana (a atual) e aplica as regras; o argumento só identifica a ação.
+    mutationFn: async (_weekStart: ISODate) => {
+      unwrap(await supabase.rpc('freeze_week'));
     },
     onError: notifyError,
     onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
@@ -29,8 +30,8 @@ export function useFreeze() {
 export function useUnfreeze() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (weekStart: ISODate) => {
-      unwrap(await supabase.from('week_freezes').delete().eq('week_start', weekStart));
+    mutationFn: async (_weekStart: ISODate) => {
+      unwrap(await supabase.rpc('unfreeze_week'));
     },
     onError: notifyError,
     onSettled: () => qc.invalidateQueries({ queryKey: KEY }),
