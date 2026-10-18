@@ -36,7 +36,7 @@ it('fila offline envia o check-in antes das séries ao reconectar', async () => 
   onlineManager.setOnline(false);
   act(() => {
     result.current.checkin.mutate('2026-10-18');
-    result.current.addSet.mutate({ id: 's1', date: '2026-10-18', exercise: 'Supino', setNumber: 1, reps: 10, weightKg: 60 });
+    result.current.addSet.mutate({ id: 's1', date: '2026-10-18', exercise: 'Supino', muscleGroup: null, kind: null, setNumber: 1, reps: 10, weightKg: 60, rpe: null, done: true });
   });
   act(() => onlineManager.setOnline(true));
   await waitFor(() => expect(order).toContain('start:do_checkin'));

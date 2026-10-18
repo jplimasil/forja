@@ -47,7 +47,7 @@ export function Workout() {
     const r = parseNum(reps);
     const w = parseNum(weight || '0');
     if (!name || !(r > 0) || !(w >= 0)) return;
-    addSet.mutate({ id: crypto.randomUUID(), date: today, exercise: name, setNumber: nextSetNumber(name), reps: Math.round(r), weightKg: w });
+    addSet.mutate({ id: crypto.randomUUID(), date: today, exercise: name, muscleGroup: null, kind: null, setNumber: nextSetNumber(name), reps: Math.round(r), weightKg: w, rpe: null, done: true });
   }
 
   function repeatLast() {
@@ -99,7 +99,7 @@ export function Workout() {
                       <li key={s.id} className="flex items-center gap-4 px-4 py-3">
                         <span className="w-6 text-sm text-muted tabular">{s.setNumber}</span>
                         <span className="flex-1 tabular">
-                          {s.reps} × <span className="font-semibold">{s.weightKg.toLocaleString('pt-BR')} kg</span>
+                          {s.reps} × <span className="font-semibold">{(s.weightKg ?? 0).toLocaleString('pt-BR')} kg</span>
                         </span>
                         <button type="button" onClick={() => deleteSet.mutate(s.id)} className="text-sm text-muted hover:text-danger" aria-label={`Apagar série ${s.setNumber} de ${name}`}>
                           Apagar

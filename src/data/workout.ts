@@ -3,14 +3,20 @@ import type { ISODate } from '@rules/types.ts';
 import { fetchAll, supabase, unwrap } from '../lib/supabase';
 import { queryClient, registerMutationDefaults } from '../lib/queryClient';
 import { notifyError } from '../lib/errors';
+import type { ExerciseKind, MuscleGroup } from '../features/workout/muscles';
 
 export interface WorkoutSet {
   id: string;
   date: ISODate;
   exercise: string;
+  muscleGroup: MuscleGroup | null;
+  kind: ExerciseKind | null;
   setNumber: number;
-  reps: number;
-  weightKg: number;
+  /** null em série planejada sem histórico (ainda não preenchida). */
+  reps: number | null;
+  weightKg: number | null;
+  rpe: number | null;
+  done: boolean;
 }
 
 const SETS = ['sets'];
@@ -46,9 +52,13 @@ export function useSets() {
           id: r.id,
           date: r.checkins.date,
           exercise: r.exercises.name,
+          muscleGroup: null,
+          kind: null,
           setNumber: r.set_number,
           reps: r.reps,
           weightKg: Number(r.weight_kg),
+          rpe: null,
+          done: true,
         }))
         .sort((a, b) => (a.date === b.date ? a.setNumber - b.setNumber : a.date < b.date ? -1 : 1));
     },

@@ -7,7 +7,7 @@ export function topSetByDate(sets: WorkoutSet[], exercise: string): { date: ISOD
   const best = new Map<ISODate, number>();
   for (const s of sets) {
     if (s.exercise.toLowerCase() !== name) continue;
-    best.set(s.date, Math.max(best.get(s.date) ?? 0, s.weightKg));
+    best.set(s.date, Math.max(best.get(s.date) ?? 0, s.weightKg ?? 0));
   }
   return [...best.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([date, weightKg]) => ({ date, weightKg }));
 }

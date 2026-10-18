@@ -2,7 +2,7 @@ import { topSetByDate, lastSession } from './progress';
 import type { WorkoutSet } from '../../data/workout';
 
 const s = (id: string, date: string, exercise: string, setNumber: number, weightKg: number): WorkoutSet =>
-  ({ id, date, exercise, setNumber, reps: 10, weightKg });
+  ({ id, date, exercise, setNumber, reps: 10, weightKg, muscleGroup: null, kind: null, rpe: null, done: true });
 
 const sets = [
   s('a', '2026-10-13', 'Supino', 1, 60),
