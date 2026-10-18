@@ -36,13 +36,28 @@ export async function subscribePush(): Promise<void> {
   if (permission !== 'granted') throw new Error('Permissão de notificações não concedida.');
   const reg = await navigator.serviceWorker.ready;
   const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) }));
+  await saveSubscription(supabase, sub);
+}
+
+async function saveSubscription(db: Pick<typeof supabase, 'from'>, sub: PushSubscription): Promise<void> {
   const json = sub.toJSON();
   unwrap(
-    await supabase.from('push_subscriptions').upsert(
+    await db.from('push_subscriptions').upsert(
       { endpoint: sub.endpoint, p256dh: json.keys?.p256dh, auth: json.keys?.auth, user_agent: navigator.userAgent },
       { onConflict: 'endpoint' },
     ),
   );
+}
+
+/**
+ * Regrava no servidor a inscrição deste aparelho, se existir. Roda ao abrir o app: cobre a linha
+ * apagada pelo servidor (404/410), removida por engano ou um endpoint trocado pelo navegador.
+ */
+export async function syncPushSubscription(db: Pick<typeof supabase, 'from'> = supabase): Promise<void> {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted' || !('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  if (sub) await saveSubscription(db, sub);
 }
 
 export async function unsubscribePush(): Promise<void> {

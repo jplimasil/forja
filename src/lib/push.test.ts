@@ -1,4 +1,4 @@
-import { pushStatus } from './push';
+import { pushStatus, syncPushSubscription } from './push';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
 const CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36';
@@ -34,4 +34,33 @@ it('navegador sem PushManager não suporta', async () => {
 it('suportado e ainda não inscrito', async () => {
   env({ ua: IPHONE, standalone: true, push: true });
   expect(await pushStatus()).toBe('can-subscribe');
+});
+
+describe('syncPushSubscription', () => {
+  const upsert = vi.fn().mockResolvedValue({ data: null, error: null });
+  beforeEach(() => upsert.mockClear());
+
+  function withSub(sub: object | null, permission: NotificationPermission) {
+    vi.stubGlobal('navigator', {
+      userAgent: CHROME, maxTouchPoints: 0, platform: 'x',
+      serviceWorker: { getRegistration: async () => ({ pushManager: { getSubscription: async () => sub } }) },
+    });
+    vi.stubGlobal('PushManager', function PushManager() {});
+    vi.stubGlobal('Notification', { permission });
+  }
+  const sub = { endpoint: 'https://push.example/abc', toJSON: () => ({ keys: { p256dh: 'p', auth: 'a' } }) };
+
+  it('regrava no servidor a inscrição existente deste aparelho', async () => {
+    withSub(sub, 'granted');
+    await syncPushSubscription({ from: () => ({ upsert }) } as never);
+    expect(upsert).toHaveBeenCalledWith(expect.objectContaining({ endpoint: 'https://push.example/abc', p256dh: 'p', auth: 'a' }), { onConflict: 'endpoint' });
+  });
+
+  it('sem inscrição ou sem permissão não grava nada', async () => {
+    withSub(null, 'granted');
+    await syncPushSubscription({ from: () => ({ upsert }) } as never);
+    withSub(sub, 'default');
+    await syncPushSubscription({ from: () => ({ upsert }) } as never);
+    expect(upsert).not.toHaveBeenCalled();
+  });
 });

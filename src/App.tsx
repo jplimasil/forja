@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router';
+import { useEffect } from 'react';
 import { useSession } from './lib/auth';
+import { syncPushSubscription } from './lib/push';
 import { useSettings } from './data/settings';
 import { AppShell } from './ui/AppShell';
 import { AuthScreen } from './features/auth/AuthScreen';
@@ -32,6 +34,10 @@ function SettingsGate() {
 
 export function App() {
   const { session, loading } = useSession();
+  const userId = session?.user.id;
+  useEffect(() => {
+    if (userId) syncPushSubscription().catch(() => undefined);
+  }, [userId]);
   if (loading) return <Splash />;
   if (!session) return <AuthScreen />;
   return (
