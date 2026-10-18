@@ -7,6 +7,7 @@ import { Onboarding } from './features/onboarding/Onboarding';
 import { Home } from './features/home/Home';
 import { Sos } from './features/sos/Sos';
 import { Workout } from './features/workout/Workout';
+import { Body } from './features/body/Body';
 import { PageTitle } from './ui/Card';
 
 function Placeholder({ title }: { title: string }) {
@@ -45,7 +46,7 @@ export function App() {
             <Route index element={<Home />} />
             <Route path="sos" element={<Sos />} />
             <Route path="treino" element={<Workout />} />
-            <Route path="corpo" element={<Placeholder title="Corpo" />} />
+            <Route path="corpo" element={<Body />} />
             <Route path="historico" element={<Placeholder title="Histórico" />} />
             <Route path="ajustes" element={<Placeholder title="Ajustes" />} />
             <Route path="*" element={<Navigate to="/" replace />} />
