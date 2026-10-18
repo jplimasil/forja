@@ -9,6 +9,7 @@ import { Onboarding } from './features/onboarding/Onboarding';
 import { Home } from './features/home/Home';
 import { Sos } from './features/sos/Sos';
 import { Workout } from './features/workout/Workout';
+import { Routines } from './features/workout/Routines';
 import { Body } from './features/body/Body';
 import { History } from './features/history/History';
 import { Settings } from './features/settings/Settings';
@@ -49,6 +50,7 @@ export function App() {
             <Route index element={<Home />} />
             <Route path="sos" element={<Sos />} />
             <Route path="treino" element={<Workout />} />
+            <Route path="treino/fichas" element={<Routines />} />
             <Route path="corpo" element={<Body />} />
             <Route path="historico" element={<History />} />
             <Route path="ajustes" element={<Settings />} />
